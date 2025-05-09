@@ -1,4 +1,3 @@
-import { CustomCategory } from "../types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {  ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
@@ -10,24 +9,28 @@ import {
     SheetHeader,
     SheetTitle
  } from '@/components/ui/sheet'
+import { useTRPC } from "@/trpc/client";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
 
 interface Props {
     open: boolean;
     onOpenChange: (open:boolean) => void;
-    data: CustomCategory[];
 }
 
 export const CategoriesSidebar = ({ 
     open, 
     onOpenChange,
-    data
 }: Props) => {
 
+  const trpc = useTRPC();
+    const { data } = useSuspenseQuery(trpc.categories.getMany.queryOptions());
+
     const [parentCategories, setParentCategories] =
-      useState<CustomCategory[] | null>(null);
+      useState<CategoriesGetManyOutput | null>(null);
     const [selectedCategory, setSelectedCategory] =
-      useState<CustomCategory | null>(null);
+      useState<CategoriesGetManyOutput[1] | null>(null);
 
     const router = useRouter();
 
@@ -41,27 +44,29 @@ export const CategoriesSidebar = ({
         onOpenChange(open);
     }
 
-    const handleCategoryClick = (category:CustomCategory)=> {
-        if(category.subcategories && category.subcategories.length > 0){
-            setParentCategories(category.subcategories as CustomCategory[]);
-            setSelectedCategory(category);
-        }else {
-            //this is a leaf category(no subcategories)
-            if(parentCategories && selectedCategory){
-                //this is a subcategory - navigate to /category/subcategory
-                router.push(`/${selectedCategory.slug}/${category.slug}`)
-            }else{
-                //this is a main category - navigate to /category
-                if(category.slug === "all"){
-                    router.push("/")
-                }else{
-                    router.push(`/${category.slug}`);
-                }
-            }
-
-            handleOpenChange(false);
+    const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
+      if (category.subcategories && category.subcategories.length > 0) {
+        setParentCategories(
+          category.subcategories as CategoriesGetManyOutput
+        );
+        setSelectedCategory(category);
+      } else {
+        //this is a leaf category(no subcategories)
+        if (parentCategories && selectedCategory) {
+          //this is a subcategory - navigate to /category/subcategory
+          router.push(`/${selectedCategory.slug}/${category.slug}`);
+        } else {
+          //this is a main category - navigate to /category
+          if (category.slug === "all") {
+            router.push("/");
+          } else {
+            router.push(`/${category.slug}`);
+          }
         }
-    }
+
+        handleOpenChange(false);
+      }
+    };
 
     const handlebackClick =()=>{
         if(parentCategories){
