@@ -2,45 +2,49 @@
 
 import { Button } from "@/components/ui/button";
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { Poppins } from 'next/font/google'
+import { Poppins } from "next/font/google";
 import { useForm } from "react-hook-form";
 import { registerSchema } from "../../schema";
 import { z } from "zod";
 import Link from "next/link";
-import { toast } from 'sonner'
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 const poppins = Poppins({
-    subsets: ["latin"],
-    weight: ["700"],
-})
+  subsets: ["latin"],
+  weight: ["700"],
+});
 
 export const SignUpView = () => {
+  const router = useRouter();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
-    const router = useRouter()
-    const trpc = useTRPC();
-    const register = useMutation(trpc.auth.register.mutationOptions({
-        onError: (error) => {
-            toast.error(error.message);
-        },
-        onSuccess: ()=> {
-            router.push("/")
-        }
-    }));
+  const register = useMutation(
+    trpc.auth.register.mutationOptions({
+      onError: (error) => {
+        toast.error(error.message);
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+        router.push("/");
+      },
+    })
+  );
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -59,7 +63,7 @@ export const SignUpView = () => {
   const username = form.watch("username");
   const usernameErrors = form.formState.errors.username;
 
-  const showPreview = username && !usernameErrors
+  const showPreview = username && !usernameErrors;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5">
@@ -71,78 +75,73 @@ export const SignUpView = () => {
           >
             <div className="flex items-center justify-between mb-8">
               <Link href="/">
-                <span className={cn("text-2xl", poppins.className)}>bunroad</span>
+                <span className={cn("text-2xl", poppins.className)}>
+                  bunroad
+                </span>
               </Link>
               <Button
-              asChild 
-              variant="ghost"
-              size="sm"
-              className="text-base border-none underline"
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-base border-none underline"
               >
-                <Link href="/sign-in">
-                Sign in
-                </Link>
+                <Link href="/sign-in">Sign in</Link>
               </Button>
             </div>
             <h1 className="text-4xl font-medium">
-                Join over 1,483 creators earning money on bunroad.
+              Join over 1,483 creators earning money on bunroad.
             </h1>
             <FormField
-            name="username"
-            render={({ field }) => (
+              name="username"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel className="text-base">
-                        Username
-                    </FormLabel>
-                    <FormControl>
-                        <Input {...field} />
-                    </FormControl>
-                    <FormDescription
+                  <FormLabel className="text-base">Username</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription
                     className={cn("hidden", showPreview && "block")}
-                    >
-                        Your store will be available at&nbsp; <strong>{username}</strong>.shop.com
-                        {/* //TODO: Use proper method to generate preview url*/}
-                    </FormDescription>
-                    <FormMessage />
+                  >
+                    Your store will be available at&nbsp;{" "}
+                    <strong>{username}</strong>.shop.com
+                    {/* //TODO: Use proper method to generate preview url*/}
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
-            )}
+              )}
             />
             <FormField
-            name="email"
-            render={({ field }) => (
+              name="email"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel className="text-base">
-                        Email
-                    </FormLabel>
-                    <FormControl>
-                        <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel className="text-base">Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-            )}
+              )}
             />
             <FormField
-            name="password"
-            render={({ field }) => (
+              name="password"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel className="text-base">
-                        Password
-                    </FormLabel>
-                    <FormControl>
-                        <Input {...field} type="password"/>
-                    </FormControl>
-                    <FormMessage />
+                  <FormLabel className="text-base">Password</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="password" />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-            )}
+              )}
             />
             <Button
-            disabled={register.isPending}
-            type="submit"
-            size="lg"
-            variant="elevated"
-            className="bg-black text-white hover:bg-pink-400 hover:text-primary"
+              disabled={register.isPending}
+              type="submit"
+              size="lg"
+              variant="elevated"
+              className="bg-black text-white hover:bg-pink-400 hover:text-primary"
             >
-                Create account
+              Create account
             </Button>
           </form>
         </Form>
